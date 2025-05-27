@@ -1,40 +1,15 @@
-import {createHydrogenContext} from '@shopify/hydrogen';
 import {createShopifyAdminClient} from '~/lib/shopify-admin-client.server';
-import {AppSession} from '~/lib/session';
-import {CART_QUERY_FRAGMENT} from '~/lib/fragments';
 
 /**
- * The context implementation is separate from server.ts
- * so that type can be extracted for AppLoadContext
+ * Create app context for webhook processing
  * @param {Request} request
  * @param {Env} env
  * @param {ExecutionContext} executionContext
+ * @returns {Promise<AppContext>}
  */
-export async function createAppLoadContext(request, env, executionContext) {
-  /**
-   * Open a cache instance in the worker and a custom session instance.
-   */
-  if (!env?.SESSION_SECRET) {
-    throw new Error('SESSION_SECRET environment variable is not set');
-  }
-
+export async function createAppContext(request, env, executionContext) {
   const waitUntil = executionContext.waitUntil.bind(executionContext);
-  const [cache, session] = await Promise.all([
-    caches.open('hydrogen'),
-    AppSession.init(request, [env.SESSION_SECRET]),
-  ]);
-
-  const hydrogenContext = createHydrogenContext({
-    env,
-    request,
-    cache,
-    waitUntil,
-    session,
-    i18n: {language: 'EN', country: 'US'},
-    cart: {
-      queryFragment: CART_QUERY_FRAGMENT,
-    },
-  });
+  const cache = await caches.open('hydrogen');
 
   const shopifyAdminClient = createShopifyAdminClient({
     cache,
@@ -44,7 +19,22 @@ export async function createAppLoadContext(request, env, executionContext) {
   });
 
   return {
-    ...hydrogenContext,
+    env,
+    waitUntil,
     shopifyAdminClient,
   };
 }
+
+/**
+ * @typedef {Object} AppContext
+ * @property {Env} env
+ * @property {Function} waitUntil
+ * @property {Object} shopifyAdminClient
+ */
+
+/**
+ * @typedef {Object} Env
+ * @property {string} SHOP_DOMAIN
+ * @property {string} ADMIN_API_TOKEN
+ * @property {string} API_VERSION
+ */

@@ -1,15 +1,11 @@
-/**
- * @param {LoaderFunctionArgs}
- */
-export async function loader({request}) {
-  throw new Response(`${new URL(request.url).pathname} not found`, {
-    status: 404,
-  });
+export default function NotFound() {
+  return (
+    <div style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem', textAlign: 'center' }}>
+      <h1>404 - Not Found</h1>
+      <p>The requested resource was not found.</p>
+      <p style={{ marginTop: '2rem' }}>
+        <a href="/" style={{ color: '#0066cc' }}>Return to home</a>
+      </p>
+    </div>
+  );
 }
-
-export default function CatchAllPage() {
-  return null;
-}
-
-/** @typedef {import('@shopify/remix-oxygen').LoaderFunctionArgs} LoaderFunctionArgs */
-/** @typedef {import('@shopify/remix-oxygen').SerializeFrom<typeof loader>} LoaderReturnData */
