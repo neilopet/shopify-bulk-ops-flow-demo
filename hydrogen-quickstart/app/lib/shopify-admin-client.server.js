@@ -1,4 +1,4 @@
-import {createWithCache, CacheLong} from '@shopify/hydrogen';
+import {createWithCache, CacheNone} from '@shopify/hydrogen';
 
 export function createShopifyAdminClient({cache, waitUntil, env, request}) {
   const withCache = createWithCache({cache, waitUntil, request});
@@ -7,10 +7,14 @@ export function createShopifyAdminClient({cache, waitUntil, env, request}) {
 
   async function query(
     query,
-    options = {variables: {}, cacheStrategy: CacheLong(), apiVersion},
+    options = {variables: {}, cacheStrategy: CacheNone(), apiVersion},
   ) {
+    const endpoint = `${baseUrl}/${options.apiVersion || apiVersion}/graphql.json`;
+    console.log('endpoint: ', endpoint);
+    console.log('query: ', query);
+    console.log('variables: ', options.variables);
     const result = await withCache.fetch(
-      `${baseUrl}/${options.apiVersion}/graphql.json`,
+      endpoint,
       {
         method: 'POST',
         headers: {
@@ -26,10 +30,19 @@ export function createShopifyAdminClient({cache, waitUntil, env, request}) {
         cacheKey: ['shopify-admin', query, JSON.stringify(options.variables)],
         cacheStrategy: options.cacheStrategy,
         shouldCacheResponse: (body) =>
-          body.error == null || body.error.length === 0,
+          !body.errors || body.errors.length === 0,
       },
     );
-    return result.data;
+    
+    const jsonResult = await result.json();
+    console.log('GraphQL response:', JSON.stringify(jsonResult, null, 2));
+    
+    if (jsonResult.errors) {
+      console.error('GraphQL errors:', jsonResult.errors);
+      throw new Error(`GraphQL errors: ${JSON.stringify(jsonResult.errors)}`);
+    }
+    
+    return jsonResult.data;
   }
 
   return {query};
