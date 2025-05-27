@@ -34,15 +34,18 @@ export function createShopifyAdminClient({cache, waitUntil, env, request}) {
       },
     );
     
-    const jsonResult = await result.json();
-    console.log('GraphQL response:', JSON.stringify(jsonResult, null, 2));
+    // withCache.fetch returns a wrapper object with the GraphQL response in the 'data' property
+    console.log('GraphQL response:', JSON.stringify(result, null, 2));
     
-    if (jsonResult.errors) {
-      console.error('GraphQL errors:', jsonResult.errors);
-      throw new Error(`GraphQL errors: ${JSON.stringify(jsonResult.errors)}`);
+    // The actual GraphQL response is in result.data
+    const graphqlResponse = result.data || result;
+    
+    if (graphqlResponse.errors) {
+      console.error('GraphQL errors:', graphqlResponse.errors);
+      throw new Error(`GraphQL errors: ${JSON.stringify(graphqlResponse.errors)}`);
     }
     
-    return jsonResult.data;
+    return graphqlResponse.data;
   }
 
   return {query};
