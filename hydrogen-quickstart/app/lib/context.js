@@ -1,4 +1,5 @@
 import {createHydrogenContext} from '@shopify/hydrogen';
+import {createShopifyAdminClient} from '~/lib/shopify-admin-client.server';
 import {AppSession} from '~/lib/session';
 import {CART_QUERY_FRAGMENT} from '~/lib/fragments';
 
@@ -35,8 +36,15 @@ export async function createAppLoadContext(request, env, executionContext) {
     },
   });
 
+  const shopifyAdminClient = createShopifyAdminClient({
+    cache,
+    waitUntil,
+    env,
+    request,
+  });
+
   return {
     ...hydrogenContext,
-    // declare additional Remix loader context
+    shopifyAdminClient,
   };
 }

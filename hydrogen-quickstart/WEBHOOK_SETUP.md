@@ -26,10 +26,10 @@ Edit `.env.local` with your Shopify configuration:
 
 ```env
 # Your Shopify shop domain (without .myshopify.com)
-SHOPIFY_SHOP_DOMAIN=your-shop-name
+SHOP_DOMAIN=your-shop-name
 
 # Shopify Admin API access token
-SHOPIFY_ACCESS_TOKEN=shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ADMIN_API_TOKEN=shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Location IDs to exclude from fulfillment order rerouting
 EXCLUDED_LOCATION_IDS=gid://shopify/Location/9803125
@@ -236,7 +236,7 @@ Monitor these logs to ensure proper operation and troubleshoot issues.
 - Check variable names match exactly
 
 **"Permission denied (publickey)"**
-- Ensure SHOPIFY_ACCESS_TOKEN has correct permissions
+- Ensure ADMIN_API_TOKEN has correct permissions
 - Verify token is not expired
 
 **"Bulk operation not found"**
