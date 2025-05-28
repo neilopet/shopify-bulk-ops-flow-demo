@@ -21,8 +21,16 @@ const WEBHOOK_SUBSCRIPTION_QUERY = `#graphql
 export async function loader({context}) {
   const webhookId = getWebhookSubscriptionId();
   
+  // Get environment values safely from context
+  const environment = {
+    nodeEnv: context.env.NODE_ENV || 'development',
+    storeDomain: context.env.PUBLIC_STORE_DOMAIN || 'Not set',
+    webhookBaseUrl: context.env.WEBHOOK_BASE_URL || 'Not set',
+    localWebhookUrl: context.env.LOCAL_WEBHOOK_URL || 'Not set'
+  };
+  
   if (!webhookId) {
-    return Response.json({webhook: null, error: null});
+    return Response.json({webhook: null, error: null, environment});
   }
 
   try {
@@ -33,12 +41,14 @@ export async function loader({context}) {
     
     return Response.json({
       webhook: response.data?.webhookSubscription,
-      error: null
+      error: null,
+      environment
     });
   } catch (error) {
     return Response.json({
       webhook: null,
-      error: error.message
+      error: error.message,
+      environment
     });
   }
 }
@@ -67,7 +77,7 @@ export async function action({request, context}) {
 }
 
 export default function WebhookManage() {
-  const {webhook, error} = useLoaderData();
+  const {webhook, error, environment} = useLoaderData();
   const actionData = useActionData();
   
   return (
@@ -135,10 +145,10 @@ export default function WebhookManage() {
       <section style={{marginTop: '2rem'}}>
         <h2>Environment Info</h2>
         <div style={{background: '#f0f0f0', padding: '1rem', borderRadius: '8px'}}>
-          <p><strong>Environment:</strong> {process.env.NODE_ENV}</p>
-          <p><strong>Store Domain:</strong> {process.env.PUBLIC_STORE_DOMAIN}</p>
-          <p><strong>Webhook Base URL:</strong> {process.env.WEBHOOK_BASE_URL || 'Not set'}</p>
-          <p><strong>Local Webhook URL:</strong> {process.env.LOCAL_WEBHOOK_URL || 'Not set'}</p>
+          <p><strong>Environment:</strong> {environment.nodeEnv}</p>
+          <p><strong>Store Domain:</strong> {environment.storeDomain}</p>
+          <p><strong>Webhook Base URL:</strong> {environment.webhookBaseUrl}</p>
+          <p><strong>Local Webhook URL:</strong> {environment.localWebhookUrl}</p>
         </div>
       </section>
       

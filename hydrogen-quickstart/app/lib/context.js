@@ -22,6 +22,8 @@ export async function createAppContext(request, env, executionContext) {
     env,
     waitUntil,
     shopifyAdminClient,
+    // Add as 'storefront' to satisfy GraphiQL's hardcoded requirement
+    storefront: shopifyAdminClient,
   };
 }
 
