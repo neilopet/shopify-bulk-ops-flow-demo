@@ -1,4 +1,3 @@
-import {json} from '@shopify/remix-oxygen';
 import {Form, useActionData, useLoaderData} from 'react-router-dom';
 import {ensureWebhookSubscription, getWebhookSubscriptionId} from '~/lib/webhooks/webhook-manager.server';
 import {createShopifyAdminClient} from '~/lib/shopify-admin-client.server';
@@ -23,7 +22,7 @@ export async function loader({context}) {
   const webhookId = getWebhookSubscriptionId();
   
   if (!webhookId) {
-    return json({webhook: null, error: null});
+    return Response.json({webhook: null, error: null});
   }
 
   try {
@@ -32,12 +31,12 @@ export async function loader({context}) {
       variables: {id: webhookId}
     });
     
-    return json({
+    return Response.json({
       webhook: response.data?.webhookSubscription,
       error: null
     });
   } catch (error) {
-    return json({
+    return Response.json({
       webhook: null,
       error: error.message
     });
@@ -51,20 +50,20 @@ export async function action({request, context}) {
   if (action === 'register') {
     try {
       const webhook = await ensureWebhookSubscription(context);
-      return json({
+      return Response.json({
         success: true,
         webhook,
         message: webhook ? 'Webhook subscription updated successfully' : 'Failed to update webhook'
       });
     } catch (error) {
-      return json({
+      return Response.json({
         success: false,
         error: error.message
       });
     }
   }
   
-  return json({success: false, error: 'Invalid action'});
+  return Response.json({success: false, error: 'Invalid action'});
 }
 
 export default function WebhookManage() {
