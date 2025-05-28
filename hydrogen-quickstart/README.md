@@ -37,13 +37,14 @@ cp .env.example .env
 
 4. Configure your `.env` file with your Shopify credentials:
 ```
-SESSION_SECRET="your-session-secret"
+SESSION_SECRET="your-session-secret-here"
 PUBLIC_STOREFRONT_API_TOKEN="your-storefront-token"
 PRIVATE_STOREFRONT_API_TOKEN="your-private-storefront-token"
 PUBLIC_STORE_DOMAIN="your-store.myshopify.com"
 PUBLIC_STOREFRONT_ID="your-storefront-id"
 SHOPIFY_ADMIN_API_ACCESS_TOKEN="shpat_xxxxx"  # Required for webhook management
 SHOPIFY_WEBHOOK_SECRET="your-webhook-secret"
+SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN="your-deployment-token"  # Required for automated deployments
 ```
 
 **Note:** The `SHOPIFY_ADMIN_API_ACCESS_TOKEN` must be a valid Admin API token (starts with `shpat_`) with `write_webhooks` permission. To create one:
@@ -96,22 +97,27 @@ app/
 
 ### Production Deployment with Custom Domain
 
-For webhook functionality, deploy to production with a custom domain configured in Shopify:
+For webhook functionality, deploy to production with a custom domain configured in Shopify.
 
+**Fully Automated Deployment**
 ```bash
-npm run build
-shopify hydrogen deploy
+npm run deploy:production
 ```
 
-Once deployed with a custom domain (e.g., `shop.vaporwar.es`), update your webhook:
-
-```bash
-npm run webhook:update https://shop.vaporwar.es/webhooks
-```
+This script will automatically:
+1. Build your project
+2. Deploy to Shopify Hydrogen production
+3. Create or update your webhook configuration
 
 **Requirements:**
 - Custom domain configured in Shopify admin
 - `ADMIN_API_TOKEN` in `.env` with `write_webhooks` permission
+- `SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN` in `.env` for automated deployments
+
+**Getting Your Deployment Token:**
+1. Go to your Shopify Hydrogen settings
+2. Find your deployment token
+3. Add to `.env`: `SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN=your_token_here`
 
 ### Alternative Deployment Options
 

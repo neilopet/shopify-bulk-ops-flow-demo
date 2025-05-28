@@ -38,7 +38,7 @@ async function deployProduction() {
 
     // Step 2: Deploy to Shopify Hydrogen production
     console.log('☁️  Deploying to Shopify Hydrogen production...');
-    await runCommand('node_modules/.bin/shopify', ['hydrogen', 'deploy', '--env=production', '-f']);
+    await runCommand('npx', ['shopify', 'hydrogen', 'deploy', '--env=production']);
     console.log('✅ Deployment completed successfully\n');
 
     // Step 3: Setup webhook if needed
@@ -73,6 +73,13 @@ async function deployProduction() {
 // Check required environment variables
 if (!process.env.PUBLIC_STORE_DOMAIN) {
   console.error('❌ Missing required environment variable: PUBLIC_STORE_DOMAIN');
+  process.exit(1);
+}
+
+if (!process.env.SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN) {
+  console.error('❌ Missing required environment variable: SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN');
+  console.error('   This token is required for automated deployments.');
+  console.error('   You can find it in your Shopify Hydrogen settings.');
   process.exit(1);
 }
 
