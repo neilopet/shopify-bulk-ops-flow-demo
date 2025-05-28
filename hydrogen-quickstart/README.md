@@ -42,9 +42,15 @@ PUBLIC_STOREFRONT_API_TOKEN="your-storefront-token"
 PRIVATE_STOREFRONT_API_TOKEN="your-private-storefront-token"
 PUBLIC_STORE_DOMAIN="your-store.myshopify.com"
 PUBLIC_STOREFRONT_ID="your-storefront-id"
-SHOPIFY_ADMIN_API_ACCESS_TOKEN="your-admin-api-token"
+SHOPIFY_ADMIN_API_ACCESS_TOKEN="shpat_xxxxx"  # Required for webhook management
 SHOPIFY_WEBHOOK_SECRET="your-webhook-secret"
 ```
+
+**Note:** The `SHOPIFY_ADMIN_API_ACCESS_TOKEN` must be a valid Admin API token (starts with `shpat_`) with `write_webhooks` permission. To create one:
+1. Go to Shopify Admin > Settings > Apps and sales channels
+2. Click "Develop apps" > Create an app
+3. Configure Admin API scopes: `write_webhooks`
+4. Install the app and copy the Admin API access token
 
 ### Webhook Configuration
 
@@ -88,22 +94,44 @@ app/
 
 ## Deployment
 
+### Automated Preview Deployment (Recommended)
+
+Use the integrated deploy:preview script to deploy to Shopify Oxygen and automatically update your webhook:
+
+```bash
+npm run deploy:preview
+```
+
+This script will:
+1. Deploy your app to Shopify Oxygen preview environment
+2. Extract the preview URL from the deployment output
+3. Automatically update the BULK_OPERATIONS_FINISH webhook to point to the new URL
+
+**Important:** You must have `SHOPIFY_ADMIN_API_ACCESS_TOKEN` set in your `.env` file for webhook updates to work. This token needs `write_webhooks` permission.
+
+### Manual Deployment Options
+
 This service can be deployed to any Node.js hosting platform:
 
-### Vercel
+#### Vercel
 ```bash
 npm run build
 vercel
 ```
 
-### Railway
+#### Railway
 ```bash
 railway up
 ```
 
-### Fly.io
+#### Fly.io
 ```bash
 fly deploy
+```
+
+For manual deployments, remember to update your webhook URL afterwards:
+```bash
+npm run webhook:update https://your-deployment-url.com/webhooks
 ```
 
 ## Usage

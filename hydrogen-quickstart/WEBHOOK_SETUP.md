@@ -40,11 +40,19 @@ INCLUDED_LOCATION_IDS=gid://shopify/Location/9812385,gid://shopify/Location/1203
 
 ### 2. Shopify API Permissions
 
-Your Shopify access token must have the following permissions:
-- `read_orders`
-- `write_orders`
-- `read_fulfillments`
-- `write_fulfillments`
+You need a Shopify Admin API access token (starts with `shpat_`) with the following permissions:
+- `write_webhooks` - Required for webhook management
+- `read_orders` - If processing order data
+- `write_orders` - If updating orders
+- `read_fulfillments` - If reading fulfillment data
+- `write_fulfillments` - If creating fulfillments
+
+To create an Admin API token:
+1. Go to Shopify Admin > Settings > Apps and sales channels
+2. Click "Develop apps" > Create an app
+3. Configure Admin API scopes (at minimum: `write_webhooks`)
+4. Install the app and copy the Admin API access token
+5. Add it to your `.env` file as `SHOPIFY_ADMIN_API_ACCESS_TOKEN`
 
 ### 3. Webhook Configuration in Shopify
 
@@ -88,12 +96,17 @@ For Hydrogen preview deployments or CI/CD pipelines:
 Add these to your `.env` file for automatic webhook management:
 
 ```env
+# Required for webhook management
+SHOPIFY_ADMIN_API_ACCESS_TOKEN=shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 # For production deployments
 WEBHOOK_BASE_URL=https://your-production-domain.com
 
 # For local development with ngrok
 LOCAL_WEBHOOK_URL=https://your-ngrok-url.ngrok-free.app
 ```
+
+**Important:** The `SHOPIFY_ADMIN_API_ACCESS_TOKEN` is required for all webhook management operations.
 
 ### 5. Location ID Setup
 

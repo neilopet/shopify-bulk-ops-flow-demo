@@ -7,7 +7,7 @@ const client = new GraphQLClient(
   `https://${process.env.PUBLIC_STORE_DOMAIN}/admin/api/2024-01/graphql.json`,
   {
     headers: {
-      'X-Shopify-Access-Token': process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+      'X-Shopify-Access-Token': process.env.ADMIN_API_TOKEN || process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
     },
   }
 );
@@ -244,7 +244,7 @@ Examples:
   node scripts/manage-webhook.js status
 
 Environment Variables:
-  SHOPIFY_ADMIN_API_ACCESS_TOKEN   Required: Admin API token
+  ADMIN_API_TOKEN                  Required: Admin API token
   PUBLIC_STORE_DOMAIN              Required: Store domain
   WEBHOOK_BASE_URL                 Optional: Default webhook base URL
   LOCAL_WEBHOOK_URL                Optional: Local development URL

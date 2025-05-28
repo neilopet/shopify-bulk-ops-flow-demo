@@ -13,7 +13,8 @@
     "webhook:status": "node scripts/manage-webhook.js status",
     "webhook:create": "node scripts/manage-webhook.js create",
     "webhook:update": "node scripts/manage-webhook.js update",
-    "webhook:delete": "node scripts/manage-webhook.js delete"
+    "webhook:delete": "node scripts/manage-webhook.js delete",
+    "deploy:preview": "node scripts/deploy-preview.js"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {
