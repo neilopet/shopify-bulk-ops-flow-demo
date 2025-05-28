@@ -38,7 +38,7 @@ async function deployProduction() {
 
     // Step 2: Deploy to Shopify Hydrogen production
     console.log('☁️  Deploying to Shopify Hydrogen production...');
-    await runCommand('node_modules/.bin/shopify', ['hydrogen', 'deploy', '--env=production']);
+    await runCommand('node_modules/.bin/shopify', ['hydrogen', 'deploy', '--env=production', '--force']);
     console.log('✅ Deployment completed successfully\n');
 
     // Step 3: Setup webhook if needed
