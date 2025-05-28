@@ -1,7 +1,7 @@
 import {json} from '@shopify/remix-oxygen';
 import {Form, useActionData, useLoaderData} from 'react-router-dom';
 import {ensureWebhookSubscription, getWebhookSubscriptionId} from '~/lib/webhooks/webhook-manager.server';
-import {shopifyAdmin} from '~/lib/shopify-admin-client.server';
+import {createShopifyAdminClient} from '~/lib/shopify-admin-client.server';
 
 const WEBHOOK_SUBSCRIPTION_QUERY = `#graphql
   query webhookSubscription($id: ID!) {
@@ -27,8 +27,8 @@ export async function loader({context}) {
   }
 
   try {
-    const client = shopifyAdmin(context);
-    const response = await client.request(WEBHOOK_SUBSCRIPTION_QUERY, {
+    const client = createShopifyAdminClient(context);
+    const response = await client.query(WEBHOOK_SUBSCRIPTION_QUERY, {
       variables: {id: webhookId}
     });
     

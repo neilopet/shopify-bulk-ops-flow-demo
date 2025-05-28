@@ -1,4 +1,4 @@
-import {shopifyAdmin} from '../shopify-admin-client.server.js';
+import {createShopifyAdminClient} from '../shopify-admin-client.server.js';
 
 // Cache the webhook subscription ID in memory
 let cachedWebhookId = null;
@@ -87,7 +87,7 @@ function getWebhookUrl() {
  */
 async function findExistingWebhook(client) {
   try {
-    const response = await client.request(WEBHOOK_SUBSCRIPTIONS_QUERY, {
+    const response = await client.query(WEBHOOK_SUBSCRIPTIONS_QUERY, {
       variables: { first: 100 }
     });
 
@@ -106,7 +106,7 @@ async function findExistingWebhook(client) {
  */
 async function createWebhook(client, callbackUrl) {
   try {
-    const response = await client.request(CREATE_WEBHOOK_MUTATION, {
+    const response = await client.query(CREATE_WEBHOOK_MUTATION, {
       variables: {
         topic: 'BULK_OPERATIONS_FINISH',
         webhookSubscription: {
@@ -132,7 +132,7 @@ async function createWebhook(client, callbackUrl) {
  */
 async function updateWebhook(client, id, callbackUrl) {
   try {
-    const response = await client.request(UPDATE_WEBHOOK_MUTATION, {
+    const response = await client.query(UPDATE_WEBHOOK_MUTATION, {
       variables: {
         id,
         webhookSubscription: {
@@ -158,7 +158,7 @@ async function updateWebhook(client, id, callbackUrl) {
  */
 export async function ensureWebhookSubscription(context) {
   try {
-    const client = shopifyAdmin(context);
+    const client = createShopifyAdminClient(context);
     const currentUrl = getWebhookUrl();
     
     console.log('Ensuring webhook subscription for URL:', currentUrl);
