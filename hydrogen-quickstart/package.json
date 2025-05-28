@@ -8,13 +8,19 @@
     "build": "shopify hydrogen build",
     "dev": "shopify hydrogen dev",
     "preview": "shopify hydrogen preview --build",
-    "lint": "eslint --no-error-on-unmatched-pattern ."
+    "lint": "eslint --no-error-on-unmatched-pattern .",
+    "webhook:list": "node scripts/manage-webhook.js list",
+    "webhook:status": "node scripts/manage-webhook.js status",
+    "webhook:create": "node scripts/manage-webhook.js create",
+    "webhook:update": "node scripts/manage-webhook.js update",
+    "webhook:delete": "node scripts/manage-webhook.js delete"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {
     "@shopify/hydrogen": "2025.5.0",
     "@shopify/remix-oxygen": "^3.0.0",
     "graphql": "^16.10.0",
+    "graphql-request": "^6.1.0",
     "graphql-tag": "^2.12.6",
     "isbot": "^5.1.22",
     "react": "^18.2.0",

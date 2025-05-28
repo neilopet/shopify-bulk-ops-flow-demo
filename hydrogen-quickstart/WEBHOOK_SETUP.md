@@ -48,13 +48,54 @@ Your Shopify access token must have the following permissions:
 
 ### 3. Webhook Configuration in Shopify
 
+This app includes automatic webhook management. You have several options:
+
+#### Option 1: Automatic Management (Recommended)
+
+**Via Web Interface:**
+1. Navigate to `/webhooks/manage` in your deployed app
+2. Click "Register/Update Webhook" to automatically configure the webhook
+
+**Via CLI:**
+```bash
+# Check current webhook status
+npm run webhook:status
+
+# Create or update webhook
+npm run webhook:update https://your-deployment-url.com/webhooks
+
+# List all webhooks
+npm run webhook:list
+```
+
+#### Option 2: Manual Configuration
+
 Configure Shopify to send bulk operation completion webhooks to your endpoint:
 
 **Webhook URL:** `https://your-domain.com/webhooks`
 **Event:** `Bulk operations/Complete`
 **Format:** JSON
 
-### 4. Location ID Setup
+#### Automatic Updates on Deployment
+
+For Hydrogen preview deployments or CI/CD pipelines:
+1. Set `WEBHOOK_BASE_URL` environment variable to your deployment URL
+2. Use the GitHub Action in `.github/workflows/update-webhook.yml`
+3. Or call the webhook update endpoint after deployment
+
+### 4. Environment Variables for Webhook Management
+
+Add these to your `.env` file for automatic webhook management:
+
+```env
+# For production deployments
+WEBHOOK_BASE_URL=https://your-production-domain.com
+
+# For local development with ngrok
+LOCAL_WEBHOOK_URL=https://your-ngrok-url.ngrok-free.app
+```
+
+### 5. Location ID Setup
 
 To find your Shopify location IDs:
 
@@ -85,6 +126,15 @@ query {
 1. Start your Hydrogen development server:
 ```bash
 npm run dev
+```
+
+2. Update webhook to point to your local URL:
+```bash
+# If using ngrok
+npm run webhook:update https://your-ngrok-url.ngrok-free.app/webhooks
+
+# Or use the management UI
+open http://localhost:3000/webhooks/manage
 ```
 
 ### Manual Testing
