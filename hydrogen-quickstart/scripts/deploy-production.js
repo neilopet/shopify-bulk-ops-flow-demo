@@ -3,13 +3,13 @@
 import { spawn } from 'child_process';
 import 'dotenv/config';
 
-async function runNpmCommand(command) {
+async function runNpmCommand(command, envOverrides = {}) {
   return new Promise((resolve, reject) => {
     console.log(`\n🔄 Running: npm run ${command}`);
     
     const child = spawn('npm', ['run', command], {
       stdio: 'inherit',
-      env: process.env
+      env: { ...process.env, ...envOverrides }
     });
 
     child.on('close', (code) => {
@@ -60,7 +60,7 @@ async function deployProduction() {
 
     // Step 2: Deploy to Shopify Hydrogen production
     console.log('☁️  Deploying to Shopify Hydrogen production...');
-    await runNpmCommand('deploy:hydrogen');
+    await runNpmCommand('deploy:hydrogen', { CI: 'true' });
     console.log('✅ Deployment completed successfully\n');
 
     // Step 3: Setup webhook if needed
