@@ -10,7 +10,8 @@ async function runCommand(command, args, options = {}) {
     const child = spawn(command, args, {
       stdio: 'inherit',
       shell: true,
-      ...options
+      env: { ...process.env, ...(options.env || {}) },
+      cwd: options.cwd || process.cwd()
     });
 
     child.on('close', (code) => {
@@ -38,7 +39,16 @@ async function deployProduction() {
 
     // Step 2: Deploy to Shopify Hydrogen production
     console.log('☁️  Deploying to Shopify Hydrogen production...');
-    await runCommand('npx', ['shopify', 'hydrogen', 'deploy', '--env=production']);
+    
+    // Use npx with full environment
+    const deployEnv = {
+      ...process.env,
+      SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN: process.env.SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN
+    };
+    
+    await runCommand('/bin/sh', ['-c', 'npx shopify hydrogen deploy --env=production --force'], {
+      env: deployEnv
+    });
     console.log('✅ Deployment completed successfully\n');
 
     // Step 3: Setup webhook if needed
