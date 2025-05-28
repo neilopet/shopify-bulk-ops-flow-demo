@@ -15,7 +15,7 @@
     "webhook:update": "node scripts/manage-webhook.js update",
     "webhook:delete": "node scripts/manage-webhook.js delete",
     "webhook:setup": "node scripts/webhook-setup.js",
-    "deploy:hydrogen": "shopify hydrogen deploy --env=production --force",
+    "deploy:hydrogen": "shopify hydrogen deploy --env=production --force --token=$SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN",
     "deploy:production": "node scripts/deploy-production.js"
   },
   "prettier": "@shopify/prettier-config",
