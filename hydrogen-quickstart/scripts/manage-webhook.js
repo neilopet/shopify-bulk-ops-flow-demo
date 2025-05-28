@@ -2,6 +2,12 @@
 
 import 'dotenv/config';
 import { GraphQLClient } from 'graphql-request';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.join(__dirname, '..', '.env');
 
 const client = new GraphQLClient(
   `https://${process.env.PUBLIC_STORE_DOMAIN}/admin/api/2024-01/graphql.json`,
@@ -28,6 +34,22 @@ const FIND_WEBHOOK_QUERY = `
           updatedAt
         }
       }
+    }
+  }
+`;
+
+const GET_WEBHOOK_QUERY = `
+  query webhookSubscription($id: ID!) {
+    webhookSubscription(id: $id) {
+      id
+      topic
+      endpoint {
+        ... on WebhookHttpEndpoint {
+          callbackUrl
+        }
+      }
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -84,13 +106,67 @@ const DELETE_WEBHOOK_MUTATION = `
   }
 `;
 
+async function readEnvFile() {
+  try {
+    const content = await fs.readFile(envPath, 'utf-8');
+    return content;
+  } catch (error) {
+    return '';
+  }
+}
+
+async function updateEnvVariable(key, value) {
+  let content = await readEnvFile();
+  const lines = content.split('\n');
+  let found = false;
+  
+  const updatedLines = lines.map(line => {
+    if (line.startsWith(`${key}=`) || line.startsWith(`# ${key}=`)) {
+      found = true;
+      return value ? `${key}=${value}` : `# ${key}=`;
+    }
+    return line;
+  });
+  
+  if (!found && value) {
+    updatedLines.push(`${key}=${value}`);
+  }
+  
+  await fs.writeFile(envPath, updatedLines.join('\n'));
+  process.env[key] = value;
+}
+
+async function getManagedWebhook() {
+  const webhookId = process.env.SHOPIFY_WEBHOOK_SUBSCRIPTION_ID;
+  
+  if (!webhookId) {
+    return null;
+  }
+  
+  try {
+    const { webhookSubscription } = await client.request(GET_WEBHOOK_QUERY, { id: webhookId });
+    if (webhookSubscription && webhookSubscription.topic === 'BULK_OPERATIONS_FINISH') {
+      return webhookSubscription;
+    }
+  } catch (error) {
+    // Webhook might have been deleted externally
+    console.log(`⚠️  Previously tracked webhook (${webhookId}) not found or invalid`);
+    await updateEnvVariable('SHOPIFY_WEBHOOK_SUBSCRIPTION_ID', '');
+  }
+  
+  return null;
+}
+
 async function listWebhooks() {
   const { webhookSubscriptions } = await client.request(FIND_WEBHOOK_QUERY, { first: 100 });
   console.log('\nRegistered Webhooks:');
   console.log('==================');
   
+  const managedId = process.env.SHOPIFY_WEBHOOK_SUBSCRIPTION_ID;
+  
   webhookSubscriptions.edges.forEach(({ node }) => {
-    console.log(`\nID: ${node.id}`);
+    const isManaged = node.id === managedId;
+    console.log(`\nID: ${node.id}${isManaged ? ' (Managed by this app)' : ''}`);
     console.log(`Topic: ${node.topic}`);
     console.log(`URL: ${node.endpoint?.callbackUrl}`);
     console.log(`Created: ${new Date(node.createdAt).toLocaleString()}`);
@@ -100,14 +176,15 @@ async function listWebhooks() {
   return webhookSubscriptions.edges;
 }
 
-async function findBulkOpsWebhook() {
-  const { webhookSubscriptions } = await client.request(FIND_WEBHOOK_QUERY, { first: 100 });
-  return webhookSubscriptions.edges.find(
-    edge => edge.node.topic === 'BULK_OPERATIONS_FINISH'
-  )?.node;
-}
-
 async function createWebhook(url) {
+  const existingWebhook = await getManagedWebhook();
+  if (existingWebhook) {
+    console.log('⚠️  A managed webhook already exists. Use "update" command to change the URL.');
+    console.log(`   Current webhook: ${existingWebhook.id}`);
+    console.log(`   Current URL: ${existingWebhook.endpoint?.callbackUrl}`);
+    return existingWebhook;
+  }
+  
   const callbackUrl = url || getDefaultCallbackUrl();
   console.log(`\nCreating webhook for: ${callbackUrl}`);
   
@@ -123,17 +200,21 @@ async function createWebhook(url) {
     throw new Error(webhookSubscriptionCreate.userErrors[0].message);
   }
   
-  console.log('✅ Webhook created successfully!');
-  console.log(`ID: ${webhookSubscriptionCreate.webhookSubscription.id}`);
+  const webhook = webhookSubscriptionCreate.webhookSubscription;
+  await updateEnvVariable('SHOPIFY_WEBHOOK_SUBSCRIPTION_ID', webhook.id);
   
-  return webhookSubscriptionCreate.webhookSubscription;
+  console.log('✅ Webhook created successfully!');
+  console.log(`ID: ${webhook.id}`);
+  console.log('\n📝 Webhook ID saved to .env file');
+  
+  return webhook;
 }
 
 async function updateWebhook(url) {
-  const webhook = await findBulkOpsWebhook();
+  let webhook = await getManagedWebhook();
   
   if (!webhook) {
-    console.log('No existing BULK_OPERATIONS_FINISH webhook found. Creating new one...');
+    console.log('No managed webhook found. Creating new one...');
     return createWebhook(url);
   }
   
@@ -159,10 +240,10 @@ async function updateWebhook(url) {
 }
 
 async function deleteWebhook() {
-  const webhook = await findBulkOpsWebhook();
+  const webhook = await getManagedWebhook();
   
   if (!webhook) {
-    console.log('No BULK_OPERATIONS_FINISH webhook found to delete.');
+    console.log('No managed webhook found to delete.');
     return;
   }
   
@@ -177,7 +258,10 @@ async function deleteWebhook() {
     throw new Error(webhookSubscriptionDelete.userErrors[0].message);
   }
   
+  await updateEnvVariable('SHOPIFY_WEBHOOK_SUBSCRIPTION_ID', '');
+  
   console.log('✅ Webhook deleted successfully!');
+  console.log('📝 Webhook ID removed from .env file');
 }
 
 function getDefaultCallbackUrl() {
@@ -210,16 +294,17 @@ async function main() {
         break;
         
       case 'status':
-        const webhook = await findBulkOpsWebhook();
+        const webhook = await getManagedWebhook();
         if (webhook) {
-          console.log('\nBULK_OPERATIONS_FINISH Webhook Status:');
-          console.log('=====================================');
+          console.log('\nManaged BULK_OPERATIONS_FINISH Webhook Status:');
+          console.log('=============================================');
           console.log(`ID: ${webhook.id}`);
           console.log(`URL: ${webhook.endpoint?.callbackUrl}`);
           console.log(`Created: ${new Date(webhook.createdAt).toLocaleString()}`);
           console.log(`Updated: ${new Date(webhook.updatedAt).toLocaleString()}`);
         } else {
-          console.log('\n❌ No BULK_OPERATIONS_FINISH webhook registered');
+          console.log('\n❌ No managed BULK_OPERATIONS_FINISH webhook found');
+          console.log('   Run "create" command to set one up');
         }
         break;
         
@@ -228,14 +313,17 @@ async function main() {
 Shopify Webhook Manager
 ======================
 
+This tool manages a single BULK_OPERATIONS_FINISH webhook subscription
+and tracks it via SHOPIFY_WEBHOOK_SUBSCRIPTION_ID in your .env file.
+
 Usage: node scripts/manage-webhook.js <command> [url]
 
 Commands:
-  list              List all webhooks
-  status            Show BULK_OPERATIONS_FINISH webhook status
-  create [url]      Create BULK_OPERATIONS_FINISH webhook
-  update [url]      Update BULK_OPERATIONS_FINISH webhook URL
-  delete            Delete BULK_OPERATIONS_FINISH webhook
+  list              List all webhooks (marks managed webhook)
+  status            Show managed webhook status
+  create [url]      Create new managed webhook
+  update [url]      Update managed webhook URL
+  delete            Delete managed webhook
 
 Examples:
   node scripts/manage-webhook.js list
@@ -248,6 +336,10 @@ Environment Variables:
   PUBLIC_STORE_DOMAIN              Required: Store domain
   WEBHOOK_BASE_URL                 Optional: Default webhook base URL
   LOCAL_WEBHOOK_URL                Optional: Local development URL
+  SHOPIFY_WEBHOOK_SUBSCRIPTION_ID  Auto-managed: Tracked webhook ID
+
+Note: This tool only manages webhooks it creates to avoid overwriting
+other BULK_OPERATIONS_FINISH webhooks that may exist independently.
         `);
     }
   } catch (error) {

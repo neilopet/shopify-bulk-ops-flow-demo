@@ -69,12 +69,20 @@ This app includes automatic webhook management. You have several options:
 # Check current webhook status
 npm run webhook:status
 
-# Create or update webhook
+# Create new managed webhook
+npm run webhook:create https://your-deployment-url.com/webhooks
+
+# Update existing managed webhook
 npm run webhook:update https://your-deployment-url.com/webhooks
 
-# List all webhooks
+# List all webhooks (shows which one is managed)
 npm run webhook:list
+
+# Delete managed webhook
+npm run webhook:delete
 ```
+
+**Important:** The webhook manager now tracks the webhook ID it creates in `SHOPIFY_WEBHOOK_SUBSCRIPTION_ID` in your `.env` file. This prevents accidentally overwriting other BULK_OPERATIONS_FINISH webhooks that may exist independently.
 
 #### Option 2: Manual Configuration
 
@@ -104,9 +112,14 @@ WEBHOOK_BASE_URL=https://your-production-domain.com
 
 # For local development with ngrok
 LOCAL_WEBHOOK_URL=https://your-ngrok-url.ngrok-free.app
+
+# Managed webhook ID (auto-populated by manage-webhook.js)
+# SHOPIFY_WEBHOOK_SUBSCRIPTION_ID=gid://shopify/WebhookSubscription/xxxxx
 ```
 
-**Important:** The `SHOPIFY_ADMIN_API_ACCESS_TOKEN` is required for all webhook management operations.
+**Important:** 
+- The `SHOPIFY_ADMIN_API_ACCESS_TOKEN` is required for all webhook management operations.
+- The `SHOPIFY_WEBHOOK_SUBSCRIPTION_ID` is automatically managed by the webhook scripts to track your webhook and prevent conflicts with other webhooks.
 
 ### 5. Location ID Setup
 
@@ -141,9 +154,11 @@ query {
 npm run dev
 ```
 
-2. Update webhook to point to your local URL:
+2. Create or update webhook to point to your local URL:
 ```bash
 # If using ngrok
+npm run webhook:create https://your-ngrok-url.ngrok-free.app/webhooks
+# or update existing managed webhook
 npm run webhook:update https://your-ngrok-url.ngrok-free.app/webhooks
 
 # Or use the management UI

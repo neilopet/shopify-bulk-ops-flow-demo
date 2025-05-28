@@ -94,22 +94,26 @@ app/
 
 ## Deployment
 
-### Automated Preview Deployment (Recommended)
+### Production Deployment with Custom Domain
 
-Use the integrated deploy:preview script to deploy to Shopify Oxygen and automatically update your webhook:
+For webhook functionality, deploy to production with a custom domain configured in Shopify:
 
 ```bash
-npm run deploy:preview
+npm run build
+shopify hydrogen deploy
 ```
 
-This script will:
-1. Deploy your app to Shopify Oxygen preview environment
-2. Extract the preview URL from the deployment output
-3. Automatically update the BULK_OPERATIONS_FINISH webhook to point to the new URL
+Once deployed with a custom domain (e.g., `shop.vaporwar.es`), update your webhook:
 
-**Important:** You must have `SHOPIFY_ADMIN_API_ACCESS_TOKEN` set in your `.env` file for webhook updates to work. This token needs `write_webhooks` permission.
+```bash
+npm run webhook:update https://shop.vaporwar.es/webhooks
+```
 
-### Manual Deployment Options
+**Requirements:**
+- Custom domain configured in Shopify admin
+- `ADMIN_API_TOKEN` in `.env` with `write_webhooks` permission
+
+### Alternative Deployment Options
 
 This service can be deployed to any Node.js hosting platform:
 
@@ -129,9 +133,9 @@ railway up
 fly deploy
 ```
 
-For manual deployments, remember to update your webhook URL afterwards:
+After any deployment, update your webhook URL:
 ```bash
-npm run webhook:update https://your-deployment-url.com/webhooks
+npm run webhook:update https://your-domain.com/webhooks
 ```
 
 ## Usage

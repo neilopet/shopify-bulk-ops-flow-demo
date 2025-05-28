@@ -14,7 +14,7 @@
     "webhook:create": "node scripts/manage-webhook.js create",
     "webhook:update": "node scripts/manage-webhook.js update",
     "webhook:delete": "node scripts/manage-webhook.js delete",
-    "deploy:preview": "node scripts/deploy-preview.js"
+    "deploy:production": "node scripts/deploy-production.js"
   },
   "prettier": "@shopify/prettier-config",
   "dependencies": {
