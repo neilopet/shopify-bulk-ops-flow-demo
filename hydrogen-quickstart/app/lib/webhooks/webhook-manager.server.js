@@ -1,7 +1,21 @@
 import {createShopifyAdminClient} from '../shopify-admin-client.server.js';
 
-// Cache the webhook subscription ID in memory
-let cachedWebhookId = null;
+/**
+ * Query to get a specific webhook subscription
+ */
+const GET_WEBHOOK_QUERY = `#graphql
+  query webhookSubscription($id: ID!) {
+    webhookSubscription(id: $id) {
+      id
+      topic
+      endpoint {
+        ... on WebhookHttpEndpoint {
+          callbackUrl
+        }
+      }
+    }
+  }
+`;
 
 /**
  * Query to list webhook subscriptions
@@ -73,13 +87,34 @@ const UPDATE_WEBHOOK_MUTATION = `#graphql
 /**
  * Get the current webhook URL based on the environment
  */
-function getWebhookUrl() {
+function getWebhookUrl(context) {
   // In production, use the PUBLIC_STORE_DOMAIN or a dedicated webhook URL
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? process.env.WEBHOOK_BASE_URL || `https://${process.env.PUBLIC_STORE_DOMAIN}`
-    : process.env.LOCAL_WEBHOOK_URL || 'http://localhost:3000';
+  const baseUrl = context.env.NODE_ENV === 'production' 
+    ? context.env.WEBHOOK_BASE_URL || `https://${context.env.PUBLIC_STORE_DOMAIN}`
+    : context.env.LOCAL_WEBHOOK_URL || 'http://localhost:3000';
   
   return `${baseUrl}/webhooks`;
+}
+
+/**
+ * Get webhook by ID
+ */
+async function getWebhookById(client, id) {
+  try {
+    const response = await client.query(GET_WEBHOOK_QUERY, {
+      variables: { id }
+    });
+
+    const webhook = response.data?.webhookSubscription;
+    // Verify it's the right type of webhook
+    if (webhook && webhook.topic === 'BULK_OPERATIONS_FINISH') {
+      return webhook;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting webhook by ID:', error);
+    return null;
+  }
 }
 
 /**
@@ -159,22 +194,27 @@ async function updateWebhook(client, id, callbackUrl) {
 export async function ensureWebhookSubscription(context) {
   try {
     const client = createShopifyAdminClient(context);
-    const currentUrl = getWebhookUrl();
+    const currentUrl = getWebhookUrl(context);
     
     console.log('Ensuring webhook subscription for URL:', currentUrl);
 
-    // Check if we have a cached webhook ID
+    // Check if we have a webhook ID in environment
+    const webhookId = context.env.SHOPIFY_WEBHOOK_SUBSCRIPTION_ID;
     let webhook = null;
-    if (cachedWebhookId) {
-      // Try to find the webhook by cached ID
-      webhook = await findExistingWebhook(client);
-      if (webhook && webhook.id !== cachedWebhookId) {
-        // Cached ID is stale
-        cachedWebhookId = null;
-        webhook = null;
+    
+    if (webhookId) {
+      // Try to get the specific webhook by ID
+      console.log('Checking existing webhook ID:', webhookId);
+      webhook = await getWebhookById(client, webhookId);
+      
+      if (!webhook) {
+        console.log('Tracked webhook not found, searching for any BULK_OPERATIONS_FINISH webhook');
+        // Webhook might have been deleted externally, search for any existing one
+        webhook = await findExistingWebhook(client);
       }
     } else {
-      // No cached ID, search for existing webhook
+      // No tracked ID, search for existing webhook
+      console.log('No tracked webhook ID, searching for existing webhook');
       webhook = await findExistingWebhook(client);
     }
 
@@ -185,12 +225,10 @@ export async function ensureWebhookSubscription(context) {
         console.log('Updating webhook URL from', existingUrl, 'to', currentUrl);
         webhook = await updateWebhook(client, webhook.id, currentUrl);
       }
-      cachedWebhookId = webhook.id;
     } else {
       // Create new webhook
       console.log('Creating new webhook subscription');
       webhook = await createWebhook(client, currentUrl);
-      cachedWebhookId = webhook.id;
     }
 
     console.log('Webhook subscription ensured:', {
@@ -208,8 +246,8 @@ export async function ensureWebhookSubscription(context) {
 }
 
 /**
- * Get the current webhook subscription ID
+ * Get the current webhook subscription ID from environment
  */
-export function getWebhookSubscriptionId() {
-  return cachedWebhookId;
+export function getWebhookSubscriptionId(context) {
+  return context?.env?.SHOPIFY_WEBHOOK_SUBSCRIPTION_ID || null;
 }

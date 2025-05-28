@@ -1,4 +1,4 @@
-import {createWithCache, CacheNone} from '@shopify/hydrogen';
+import {createWithCache, CacheNone, CacheLong, CacheShort, CacheCustom, generateCacheControlHeader} from '@shopify/hydrogen';
 
 export function createShopifyAdminClient({cache, waitUntil, env, request}) {
   const withCache = createWithCache({cache, waitUntil, request});
@@ -48,5 +48,59 @@ export function createShopifyAdminClient({cache, waitUntil, env, request}) {
     return graphqlResponse.data;
   }
 
-  return {query};
+  // Add mutate as an alias for query (Admin API doesn't distinguish)
+  const mutate = query;
+
+  // Stub methods for GraphiQL compatibility
+  const getPublicTokenHeaders = (props = {}) => {
+    const contentType = props.contentType || 'json';
+    return {
+      'Content-Type': contentType === 'json' ? 'application/json' : 'application/graphql',
+      'X-Shopify-Access-Token': env.ADMIN_API_TOKEN,
+    };
+  };
+
+  const getPrivateTokenHeaders = (props = {}) => {
+    const contentType = props.contentType || 'json';
+    const headers = {
+      'Content-Type': contentType === 'json' ? 'application/json' : 'application/graphql',
+      'X-Shopify-Access-Token': env.ADMIN_API_TOKEN,
+    };
+    
+    if (props.buyerIp) {
+      headers['X-Shopify-Buyer-IP'] = props.buyerIp;
+    }
+    
+    return headers;
+  };
+
+  const getShopifyDomain = (props = {}) => {
+    const domain = props.storeDomain || env.SHOP_DOMAIN;
+    return `${domain}.myshopify.com`;
+  };
+
+  const getApiUrl = (props = {}) => {
+    const domain = props.storeDomain || env.SHOP_DOMAIN;
+    const version = props.storefrontApiVersion || apiVersion;
+    return `${baseUrl}/${version}/graphql.json`;
+  };
+
+  return {
+    query,
+    mutate,
+    cache,
+    CacheNone,
+    CacheLong,
+    CacheShort,
+    CacheCustom,
+    generateCacheControlHeader,
+    getPublicTokenHeaders,
+    getPrivateTokenHeaders,
+    getShopifyDomain,
+    getApiUrl,
+    i18n: {
+      language: 'EN',
+      country: 'US',
+    },
+  };
 }

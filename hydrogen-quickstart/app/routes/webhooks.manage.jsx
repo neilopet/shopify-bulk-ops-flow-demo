@@ -19,7 +19,7 @@ const WEBHOOK_SUBSCRIPTION_QUERY = `#graphql
 `;
 
 export async function loader({context}) {
-  const webhookId = getWebhookSubscriptionId();
+  const webhookId = getWebhookSubscriptionId(context);
   
   // Get environment values safely from context
   const environment = {
