@@ -3,20 +3,41 @@
 import { spawn } from 'child_process';
 import 'dotenv/config';
 
-async function runCommand(command, args, options = {}) {
+async function runNpmCommand(command) {
   return new Promise((resolve, reject) => {
-    console.log(`\n🔄 Running: ${command} ${args.join(' ')}`);
+    console.log(`\n🔄 Running: npm run ${command}`);
     
-    const child = spawn(command, args, {
+    const child = spawn('npm', ['run', command], {
       stdio: 'inherit',
-      shell: true,
-      env: { ...process.env, ...(options.env || {}) },
-      cwd: options.cwd || process.cwd()
+      env: process.env
     });
 
     child.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(`${command} failed with exit code ${code}`));
+        reject(new Error(`npm run ${command} failed with exit code ${code}`));
+      } else {
+        resolve();
+      }
+    });
+
+    child.on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
+async function runNpmCommandWithArgs(command, args) {
+  return new Promise((resolve, reject) => {
+    console.log(`\n🔄 Running: npm run ${command} -- ${args.join(' ')}`);
+    
+    const child = spawn('npm', ['run', command, '--', ...args], {
+      stdio: 'inherit',
+      env: process.env
+    });
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`npm run ${command} failed with exit code ${code}`));
       } else {
         resolve();
       }
@@ -34,21 +55,12 @@ async function deployProduction() {
   try {
     // Step 1: Build the project
     console.log('📦 Building project...');
-    await runCommand('npm', ['run', 'build']);
+    await runNpmCommand('build');
     console.log('✅ Build completed successfully\n');
 
     // Step 2: Deploy to Shopify Hydrogen production
     console.log('☁️  Deploying to Shopify Hydrogen production...');
-    
-    // Use npx with full environment
-    const deployEnv = {
-      ...process.env,
-      SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN: process.env.SHOPIFY_HYDROGEN_DEPLOYMENT_TOKEN
-    };
-    
-    await runCommand('/bin/sh', ['-c', 'npx shopify hydrogen deploy --env=production --force'], {
-      env: deployEnv
-    });
+    await runNpmCommand('deploy:hydrogen');
     console.log('✅ Deployment completed successfully\n');
 
     // Step 3: Setup webhook if needed
@@ -63,10 +75,10 @@ async function deployProduction() {
     
     if (webhookId) {
       console.log('📌 Found existing managed webhook, updating URL...');
-      await runCommand('node', ['scripts/manage-webhook.js', 'update', webhookUrl]);
+      await runNpmCommandWithArgs('webhook:update', [webhookUrl]);
     } else {
       console.log('📌 No managed webhook found, creating new one...');
-      await runCommand('node', ['scripts/manage-webhook.js', 'create', webhookUrl]);
+      await runNpmCommandWithArgs('webhook:create', [webhookUrl]);
     }
 
     console.log('\n🎉 Production deployment completed successfully!');
