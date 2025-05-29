@@ -40,7 +40,7 @@ export const GET_BULK_OPERATION_QUERY = `#graphql
 `;
 
 export const FULFILLMENT_ORDERS_REROUTE_MUTATION = `#graphql
-  mutation fulfillmentOrdersReroute($excludedLocationIds: [ID!], $fulfillmentOrderIds: [ID!]!, $includedLocationIds: [ID!]) {
+mutation fulfillmentOrdersReroute($excludedLocationIds: [ID!], $fulfillmentOrderIds: [ID!]!, $includedLocationIds: [ID!]) {
     fulfillmentOrdersReroute(excludedLocationIds: $excludedLocationIds, fulfillmentOrderIds: $fulfillmentOrderIds, includedLocationIds: $includedLocationIds) {
       movedFulfillmentOrders {
         ...FulfillmentOrder
@@ -52,4 +52,174 @@ export const FULFILLMENT_ORDERS_REROUTE_MUTATION = `#graphql
     }
   }
   ${FULFILLMENT_ORDER_FRAGMENT}
+`;
+
+export const GET_UNCANCELLED_REJECTED_ORDERS = `#graphql
+query GetUncancelledRejectedOrders {
+    orders(
+      first: 100
+      sortKey: CREATED_AT
+      reverse: false
+      query: "-status:cancelled tag_not:cancel fulfillment_status:'request_declined'"
+    ) {
+      edges {
+        node {
+          id
+          name
+          createdAt
+          displayFulfillmentStatus
+          fulfillmentOrders(
+            first: 5
+            displayable:true
+            query: "request_status:'rejected'"
+          ) {
+            edges {
+              node {
+                id
+                supportedActions {
+                  action
+                }
+                status
+                requestStatus
+                assignedLocation {
+                  location {
+                    id
+                    name
+                  }
+                }
+                locationsForMove(first: 50) {
+                  edges {
+                    node {
+                      location {
+                        id
+                        name
+                        isFulfillmentService
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    	}
+    }
+  }
+`;
+
+export const BULK_OPERATION_RUN_QUERY = `#graphql
+mutation BulkOperationRunQuery {
+    bulkOperationRunQuery(query: """
+  query GetUncancelledRejectedOrders {
+    orders(
+      sortKey: CREATED_AT
+      reverse: false
+      query: "-status:cancelled tag_not:cancel fulfillment_status:'request_declined'"
+    ) {
+      edges {
+        node {
+          id
+          name
+          createdAt
+          displayFulfillmentStatus
+          fulfillmentOrders(
+            displayable:true
+            query: "request_status:'rejected'"
+          ) {
+            edges {
+              node {
+                id
+                supportedActions {
+                  action
+                }
+                status
+                requestStatus
+                assignedLocation {
+                  location {
+                    id
+                    name
+                  }
+                }
+                locationsForMove {
+                  edges {
+                    node {
+                      location {
+                        id
+                        name
+                        isFulfillmentService
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    	}
+    }
+  }
+    """) {
+      bulkOperation {
+        id
+        status
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const GET_BULK_OPERATION_STATUS = `#graphql
+query GetBulkOperationStatus($id: ID!) {
+  node(id: $id) {
+    ...on BulkOperation {
+      id
+      status
+      errorCode
+      query
+      type
+      createdAt
+      completedAt
+      objectCount
+      rootObjectCount
+      url
+      fileSize
+    }
+  }
+}
+`;
+
+export const REJECT_FULFILLMENT_ORDER = `#graphql
+mutation RejectFulfillmentOrder(
+    $id: ID!
+    $reason: FulfillmentOrderRejectionReason
+    $message: String
+  ) {
+    fulfillmentOrderRejectFulfillmentRequest(
+      id: $id
+      reason: $reason
+    	message: $message
+     ) {
+      fulfillmentOrder {
+        id
+        requestStatus
+        status
+        assignedLocation {
+          location {
+            id
+            name
+          }
+        }
+        supportedActions {
+          action
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
 `;
