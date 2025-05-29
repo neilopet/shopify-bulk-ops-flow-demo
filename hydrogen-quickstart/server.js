@@ -1,6 +1,6 @@
 // Virtual entry point for the app
 import {createRequestHandler} from '@shopify/remix-oxygen';
-import {createAppContext} from '~/lib/context';
+import {createAppLoadContext} from '~/lib/context';
 
 /**
  * Export a fetch handler in module format.
@@ -14,7 +14,7 @@ export default {
    */
   async fetch(request, env, executionContext) {
     try {
-      const appContext = await createAppContext(
+      const appContext = await createAppLoadContext(
         request,
         env,
         executionContext,

@@ -1,18 +1,22 @@
-import {createWithCache, CacheNone, CacheLong, CacheShort, CacheCustom, generateCacheControlHeader} from '@shopify/hydrogen';
+import {
+  createWithCache,
+  CacheNone,
+  CacheLong,
+  CacheShort,
+  CacheCustom,
+  generateCacheControlHeader,
+} from '@shopify/hydrogen';
 
 export function createShopifyAdminClient({cache, waitUntil, env, request}) {
   const withCache = createWithCache({cache, waitUntil, request});
   const apiVersion = env.API_VERSION || '2025-07';
-  const baseUrl = `https://${env.SHOP_DOMAIN}.myshopify.com/admin/api`;
+  const baseUrl = `https://${env.PUBLIC_STORE_DOMAIN}/admin/api`;
 
   async function query(
     query,
     options = {variables: {}, cacheStrategy: CacheNone(), apiVersion},
   ) {
     const endpoint = `${baseUrl}/${options.apiVersion || apiVersion}/graphql.json`;
-    console.log('endpoint: ', endpoint);
-    console.log('query: ', query);
-    console.log('variables: ', options.variables);
     const result = await withCache.fetch(
       endpoint,
       {
@@ -29,22 +33,23 @@ export function createShopifyAdminClient({cache, waitUntil, env, request}) {
       {
         cacheKey: ['shopify-admin', query, JSON.stringify(options.variables)],
         cacheStrategy: options.cacheStrategy,
-        shouldCacheResponse: (body) =>
-          !body.errors || body.errors.length === 0,
+        shouldCacheResponse: (body) => !body.errors || body.errors.length === 0,
       },
     );
-    
+
     // withCache.fetch returns a wrapper object with the GraphQL response in the 'data' property
     console.log('GraphQL response:', JSON.stringify(result, null, 2));
-    
+
     // The actual GraphQL response is in result.data
     const graphqlResponse = result.data || result;
-    
+
     if (graphqlResponse.errors) {
       console.error('GraphQL errors:', graphqlResponse.errors);
-      throw new Error(`GraphQL errors: ${JSON.stringify(graphqlResponse.errors)}`);
+      throw new Error(
+        `GraphQL errors: ${JSON.stringify(graphqlResponse.errors)}`,
+      );
     }
-    
+
     return graphqlResponse.data;
   }
 
@@ -55,7 +60,8 @@ export function createShopifyAdminClient({cache, waitUntil, env, request}) {
   const getPublicTokenHeaders = (props = {}) => {
     const contentType = props.contentType || 'json';
     return {
-      'Content-Type': contentType === 'json' ? 'application/json' : 'application/graphql',
+      'Content-Type':
+        contentType === 'json' ? 'application/json' : 'application/graphql',
       'X-Shopify-Access-Token': env.ADMIN_API_TOKEN,
     };
   };
@@ -63,14 +69,15 @@ export function createShopifyAdminClient({cache, waitUntil, env, request}) {
   const getPrivateTokenHeaders = (props = {}) => {
     const contentType = props.contentType || 'json';
     const headers = {
-      'Content-Type': contentType === 'json' ? 'application/json' : 'application/graphql',
+      'Content-Type':
+        contentType === 'json' ? 'application/json' : 'application/graphql',
       'X-Shopify-Access-Token': env.ADMIN_API_TOKEN,
     };
-    
+
     if (props.buyerIp) {
       headers['X-Shopify-Buyer-IP'] = props.buyerIp;
     }
-    
+
     return headers;
   };
 
@@ -82,7 +89,7 @@ export function createShopifyAdminClient({cache, waitUntil, env, request}) {
   const getApiUrl = (props = {}) => {
     const domain = props.storeDomain || env.SHOP_DOMAIN;
     const version = props.storefrontApiVersion || apiVersion;
-    return `${baseUrl}/${version}/graphql.json`;
+    return `/api/${version}/graphql.json`;
   };
 
   return {

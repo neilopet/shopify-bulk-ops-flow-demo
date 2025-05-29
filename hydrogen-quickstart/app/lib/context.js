@@ -7,7 +7,7 @@ import {createShopifyAdminClient} from '~/lib/shopify-admin-client.server';
  * @param {ExecutionContext} executionContext
  * @returns {Promise<AppContext>}
  */
-export async function createAppContext(request, env, executionContext) {
+export async function createAppLoadContext(request, env, executionContext) {
   const waitUntil = executionContext.waitUntil.bind(executionContext);
   const cache = await caches.open('hydrogen');
 
@@ -26,17 +26,3 @@ export async function createAppContext(request, env, executionContext) {
     storefront: shopifyAdminClient,
   };
 }
-
-/**
- * @typedef {Object} AppContext
- * @property {Env} env
- * @property {Function} waitUntil
- * @property {Object} shopifyAdminClient
- */
-
-/**
- * @typedef {Object} Env
- * @property {string} SHOP_DOMAIN
- * @property {string} ADMIN_API_TOKEN
- * @property {string} API_VERSION
- */
