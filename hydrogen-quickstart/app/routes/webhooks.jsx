@@ -28,19 +28,14 @@ async function downloadAndParseJSONL(url) {
     .filter(Boolean);
 }
 
-// Helper function to extract fulfillment order IDs from order data
-function extractFulfillmentOrderIds(orders) {
+// Helper function to extract fulfillment order IDs from JSONL data
+function extractFulfillmentOrderIds(items) {
   const fulfillmentOrderIds = [];
 
-  orders.forEach((order) => {
-    // The order structure may vary, but typically fulfillment orders are nested
-    // This is a simplified extraction - you may need to adjust based on actual data structure
-    if (order.fulfillmentOrders && order.fulfillmentOrders.edges) {
-      order.fulfillmentOrders.edges.forEach((edge) => {
-        if (edge.node && edge.node.id) {
-          fulfillmentOrderIds.push(edge.node.id);
-        }
-      });
+  items.forEach((item) => {
+    // Filter for FulfillmentOrder objects only (skip empty objects and other types)
+    if (item.__typename === 'FulfillmentOrder' && item.id) {
+      fulfillmentOrderIds.push(item.id);
     }
   });
 
@@ -168,10 +163,10 @@ async function processBulkOperationWebhook(
     const orders = await downloadAndParseJSONL(bulkOperation.url);
     console.log(`Downloaded and parsed ${orders.length} orders`);
 
-    // Step 6: Extract fulfillment order IDs
+    // Step 6: Extract fulfillment order IDs (filtering for FulfillmentOrder objects only)
     const fulfillmentOrderIds = extractFulfillmentOrderIds(orders);
     console.log(
-      `Extracted ${fulfillmentOrderIds.length} fulfillment order IDs`,
+      `Extracted ${fulfillmentOrderIds.length} fulfillment order IDs from ${orders.length} total items`,
     );
 
     // Step 7: Process fulfillment order rerouting

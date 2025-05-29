@@ -29,10 +29,13 @@ export const mockBulkOperationResponse = {
   }
 };
 
-// Mock JSONL data (each line represents an order)
-export const mockJSONLData = `{"id":"gid://shopify/Order/12345","legacyResourceId":"12345","name":"#1001","createdAt":"2025-05-27T14:26:46Z","fulfillmentOrders":{"edges":[{"node":{"id":"gid://shopify/FulfillmentOrder/78912358671"}}]}}
-{"id":"gid://shopify/Order/12346","legacyResourceId":"12346","name":"#1002","createdAt":"2025-05-27T14:26:47Z","fulfillmentOrders":{"edges":[{"node":{"id":"gid://shopify/FulfillmentOrder/78912358672"}}]}}
-{"id":"gid://shopify/Order/12347","legacyResourceId":"12347","name":"#1003","createdAt":"2025-05-27T14:26:48Z","fulfillmentOrders":{"edges":[{"node":{"id":"gid://shopify/FulfillmentOrder/78912358673"}}]}}`;
+// Mock JSONL data (each line represents either an empty object or a FulfillmentOrder)
+export const mockJSONLData = `{}
+{"id":"gid://shopify/FulfillmentOrder/78912358671","order_reference":"gid://shopify/Order/12345","__typename":"FulfillmentOrder"}
+{}
+{"id":"gid://shopify/FulfillmentOrder/78912358672","order_reference":"gid://shopify/Order/12346","__typename":"FulfillmentOrder"}
+{}
+{"id":"gid://shopify/FulfillmentOrder/78912358673","order_reference":"gid://shopify/Order/12347","__typename":"FulfillmentOrder"}`;
 
 // Function to test webhook endpoint locally
 export async function testWebhookEndpoint(baseUrl = 'http://localhost:3000') {
@@ -154,6 +157,53 @@ export function logWebhookProcessing(step, data) {
   console.log(`[${timestamp}] Webhook Processing - ${step}:`, data);
 }
 
+// Function to validate JSONL parsing and filtering for new format
+export function validateJSONLParsing(jsonlData) {
+  try {
+    const lines = jsonlData.trim().split('\n');
+    const parsedItems = lines.map(line => {
+      try {
+        return JSON.parse(line);
+      } catch (error) {
+        console.error('Failed to parse JSONL line:', line, error);
+        return null;
+      }
+    }).filter(Boolean);
+    
+    // Filter for FulfillmentOrder objects only
+    const fulfillmentOrders = parsedItems.filter(item => 
+      item.__typename === 'FulfillmentOrder' && item.id
+    );
+    
+    const emptyObjects = parsedItems.filter(item => 
+      Object.keys(item).length === 0
+    );
+    
+    console.log('JSONL Parsing Results:', {
+      totalLines: lines.length,
+      parsedItems: parsedItems.length,
+      fulfillmentOrders: fulfillmentOrders.length,
+      emptyObjects: emptyObjects.length,
+      filteredOut: parsedItems.length - fulfillmentOrders.length
+    });
+    
+    return {
+      valid: true,
+      fulfillmentOrders,
+      stats: {
+        totalItems: parsedItems.length,
+        fulfillmentOrderCount: fulfillmentOrders.length,
+        emptyObjectCount: emptyObjects.length
+      }
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      error: error.message
+    };
+  }
+}
+
 // Export all utilities for easy testing
 export default {
   mockBulkOperationWebhook,
@@ -164,5 +214,6 @@ export default {
   simulateWebhookFlow,
   createTestWebhookPayload,
   validateWebhookPayload,
-  logWebhookProcessing
+  logWebhookProcessing,
+  validateJSONLParsing
 };
