@@ -1,6 +1,6 @@
 import {
   GET_BULK_OPERATION_QUERY,
-  FULFILLMENT_ORDERS_REROUTE_MUTATION,
+  FLOW_TRIGGER_RECEIVE,
 } from '~/lib/fragments';
 
 // Helper function to download and parse JSONL file
@@ -28,83 +28,103 @@ async function downloadAndParseJSONL(url) {
     .filter(Boolean);
 }
 
-// Helper function to extract fulfillment order IDs from JSONL data
-function extractFulfillmentOrderIds(items) {
-  const fulfillmentOrderIds = [];
+// Helper function to extract fulfillment order data from JSONL data
+function extractFulfillmentOrderData(items) {
+  const fulfillmentOrderData = [];
 
   items.forEach((item) => {
     // Filter for FulfillmentOrder objects only (skip empty objects and other types)
-    if (item.__typename === 'FulfillmentOrder' && item.id) {
-      fulfillmentOrderIds.push(item.id);
+    if (item.__typename === 'FulfillmentOrder' && item.id && item.order_reference) {
+      // Extract numeric order ID from gid format (e.g., "gid://shopify/Order/12345" -> 12345)
+      const orderIdMatch = item.order_reference.match(/\/Order\/(\d+)$/);
+      if (orderIdMatch) {
+        fulfillmentOrderData.push({
+          fulfillmentOrderId: item.id,
+          orderId: parseInt(orderIdMatch[1], 10),
+        });
+      }
     }
   });
 
-  return fulfillmentOrderIds;
+  return fulfillmentOrderData;
 }
 
-// Helper function to process fulfillment order rerouting
+// Helper function to process fulfillment order rerouting via Flow
 async function processFulfillmentOrderRerouting(
-  fulfillmentOrderIds,
+  fulfillmentOrderData,
   shopifyAdminClient,
 ) {
-  if (fulfillmentOrderIds.length === 0) {
-    console.log('No fulfillment order IDs to process');
+  if (fulfillmentOrderData.length === 0) {
+    console.log('No fulfillment orders to process');
     return {success: true, processed: 0};
   }
 
-  const excludedLocationIds = [];
-  const includedLocationIds = [];
+  let processedCount = 0;
+  const errors = [];
 
-  const variables = {
-    excludedLocationIds,
-    fulfillmentOrderIds,
-    includedLocationIds,
-  };
-
-  try {
-    const result = await shopifyAdminClient.query(
-      FULFILLMENT_ORDERS_REROUTE_MUTATION,
-      {
-        variables,
-        apiVersion: 'unstable', // Use unstable API for fulfillment order rerouting
-        cacheStrategy: null, // Don't cache mutations
+  // Process each fulfillment order individually
+  for (const data of fulfillmentOrderData) {
+    const variables = {
+      handle: "reroute-fulfillment-order",
+      payload: {
+        "order_id": data.orderId,
+        "fulfillment order id": data.fulfillmentOrderId,
       },
-    );
-
-    if (result.fulfillmentOrdersReroute?.userErrors?.length > 0) {
-      console.error(
-        'Fulfillment order reroute errors:',
-        result.fulfillmentOrdersReroute.userErrors,
-      );
-      return {
-        success: false,
-        errors: result.fulfillmentOrdersReroute.userErrors,
-        processed: 0,
-      };
-    }
-
-    const movedOrders =
-      result.fulfillmentOrdersReroute?.movedFulfillmentOrders || [];
-    console.log(
-      `Successfully rerouted ${movedOrders.length} fulfillment orders`,
-    );
-
-    return {
-      success: true,
-      processed: movedOrders.length,
-      movedOrders,
     };
-  } catch (error) {
-    console.error('Error processing fulfillment order rerouting:', error);
-    return {success: false, error: error.message, processed: 0};
+
+    try {
+      const result = await shopifyAdminClient.query(
+        FLOW_TRIGGER_RECEIVE,
+        {
+          variables,
+          cacheStrategy: null, // Don't cache mutations
+        },
+      );
+
+      if (result.flowTriggerReceive?.userErrors?.length > 0) {
+        console.error(
+          'Flow trigger errors for fulfillment order:',
+          data.fulfillmentOrderId,
+          result.flowTriggerReceive.userErrors,
+        );
+        errors.push({
+          fulfillmentOrderId: data.fulfillmentOrderId,
+          errors: result.flowTriggerReceive.userErrors,
+        });
+      } else {
+        processedCount++;
+        console.log(
+          `Successfully triggered flow for fulfillment order: ${data.fulfillmentOrderId}`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        'Error triggering flow for fulfillment order:',
+        data.fulfillmentOrderId,
+        error,
+      );
+      errors.push({
+        fulfillmentOrderId: data.fulfillmentOrderId,
+        error: error.message,
+      });
+    }
   }
+
+  console.log(
+    `Successfully processed ${processedCount} out of ${fulfillmentOrderData.length} fulfillment orders`,
+  );
+
+  return {
+    success: errors.length === 0,
+    processed: processedCount,
+    errors: errors.length > 0 ? errors : undefined,
+  };
 }
 
 // Main webhook processing function
 async function processBulkOperationWebhook(
   webhookPayload,
   shopifyAdminClient,
-  env,
 ) {
   try {
     console.log('Processing bulk operation webhook:', webhookPayload);
@@ -163,17 +183,16 @@ async function processBulkOperationWebhook(
     const orders = await downloadAndParseJSONL(bulkOperation.url);
     console.log(`Downloaded and parsed ${orders.length} orders`);
 
-    // Step 6: Extract fulfillment order IDs (filtering for FulfillmentOrder objects only)
-    const fulfillmentOrderIds = extractFulfillmentOrderIds(orders);
+    // Step 6: Extract fulfillment order data (filtering for FulfillmentOrder objects only)
+    const fulfillmentOrderData = extractFulfillmentOrderData(orders);
     console.log(
-      `Extracted ${fulfillmentOrderIds.length} fulfillment order IDs from ${orders.length} total items`,
+      `Extracted ${fulfillmentOrderData.length} fulfillment orders from ${orders.length} total items`,
     );
 
-    // Step 7: Process fulfillment order rerouting
+    // Step 7: Process fulfillment order rerouting via Flow
     const result = await processFulfillmentOrderRerouting(
-      fulfillmentOrderIds,
+      fulfillmentOrderData,
       shopifyAdminClient,
-      env,
     );
 
     return {
@@ -238,7 +257,6 @@ export const action = async ({request, context}) => {
     const result = await processBulkOperationWebhook(
       webhookPayload,
       context.shopifyAdminClient,
-      context.env,
     );
 
     if (result.success) {

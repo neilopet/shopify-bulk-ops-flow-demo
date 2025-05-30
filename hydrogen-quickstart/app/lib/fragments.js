@@ -223,3 +223,21 @@ mutation RejectFulfillmentOrder(
     }
   }
 `;
+
+export const FLOW_TRIGGER_RECEIVE = `#graphql
+  mutation FlowTriggerReceive(
+    $handle:String
+    $payload: JSON
+  ) {
+    flowTriggerReceive(
+      handle: $handle
+      payload: $payload
+    ) {
+      __typename
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;

@@ -1,0 +1,15 @@
+[[extensions]]
+name = "Reroute Fulfillment Order"
+handle = "reroute-fulfillment-order"
+type = "flow_trigger"
+
+description = "Reroute a Fulfillment Order"
+
+[settings]
+
+  [[settings.fields]]
+  type = "order_reference"
+
+  [[settings.fields]]
+  type = "single_line_text_field"
+  key = "fulfillment order id"
