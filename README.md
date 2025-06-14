@@ -10,7 +10,7 @@ The extension consists of two main components:
 
 ## Flow Trigger Configuration
 
-The trigger is defined in [`shopify.extension.toml`](./shopify.extension.toml):
+The trigger is defined in [`shopify.extension.toml`](./extensions/reroute-fulfillment-order/shopify.extension.toml):
 
 ```toml
 [[extensions]]
@@ -33,7 +33,7 @@ This configuration:
 
 ## Triggering the Flow
 
-The flow is triggered programmatically via the [`webhooks.jsx`](../../hydrogen-quickstart/app/routes/webhooks.jsx) endpoint using the `flowTriggerReceive` mutation:
+The flow is triggered programmatically via the [`webhooks.jsx`](./hydrogen-quickstart/app/routes/webhooks.jsx) endpoint using the `flowTriggerReceive` mutation:
 
 ```javascript
 const variables = {
@@ -52,7 +52,7 @@ await shopifyAdminClient.query(FLOW_TRIGGER_RECEIVE, {
 
 ## Flow Workflow
 
-The [`reroute_fulfillment_order.flow`](./reroute_fulfillment_order.flow) file defines the workflow that:
+The [`reroute_fulfillment_order.flow`](./extensions/reroute-fulfillment-order/reroute_fulfillment_order.flow) file defines the workflow that:
 
 1. **Maps the Target Fulfillment Order** - Uses custom code to find the specific fulfillment order by ID
 2. **Iterates Through Fulfillment Orders** - Processes each fulfillment order on the order
@@ -92,7 +92,7 @@ for (const data of fulfillmentOrderData) {
 
 ## Related Files
 
-- [`webhooks.jsx`](../../hydrogen-quickstart/app/routes/webhooks.jsx) - Entry point for triggering the flow
-- [`fragments.js`](../../hydrogen-quickstart/app/lib/fragments.js) - GraphQL mutations including `FLOW_TRIGGER_RECEIVE`
-- [`shopify.extension.toml`](./shopify.extension.toml) - Extension configuration
-- [`reroute_fulfillment_order.flow`](./reroute_fulfillment_order.flow) - Flow definition
+- [`webhooks.jsx`](./hydrogen-quickstart/app/routes/webhooks.jsx) - Entry point for triggering the flow
+- [`fragments.js`](./hydrogen-quickstart/app/lib/fragments.js) - GraphQL mutations including `FLOW_TRIGGER_RECEIVE`
+- [`shopify.extension.toml`](./extensions/reroute-fulfillment-order/shopify.extension.toml) - Extension configuration
+- [`reroute_fulfillment_order.flow`](./extensions/reroute-fulfillment-order/reroute_fulfillment_order.flow) - Flow definition
