@@ -1,0 +1,15 @@
+[[extensions]]
+name = "test-input"
+handle = "test-input"
+type = "flow_trigger"
+schema = "./schema.graphql"
+description = "Your description"
+
+[settings]
+
+[[settings.fields]]
+type = "order_reference"
+
+[[settings.fields]]
+type = "schema.MyPayload"
+key = "id"

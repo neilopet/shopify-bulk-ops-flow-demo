@@ -1,0 +1,7 @@
+enum FulfillmentOrder {
+    PLACEHOLDER
+}
+
+type MyPayload {
+    fulfillmentOrder: FulfillmentOrder
+}
