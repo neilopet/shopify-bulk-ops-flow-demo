@@ -76,13 +76,15 @@ include_config_on_deploy = ${config.build.include_config_on_deploy}`;
 async function deployApp() {
   try {
     console.log('🚀 Deploying app with updated configuration...');
-    const { stdout, stderr } = await execAsync('shopify app deploy');
+    console.log('   Using --reset flag to force Partner Dashboard update');
+    const { stdout, stderr } = await execAsync('shopify app deploy --reset');
     
     if (stderr && !stderr.includes('successfully')) {
       console.warn('⚠️  Deploy warnings:', stderr);
     }
     
     console.log('✅ App deployed successfully!');
+    console.log('   Partner Dashboard configuration has been updated');
     if (stdout.includes('https://')) {
       const deployedUrl = stdout.match(/https:\/\/[^\s]+/)?.[0];
       if (deployedUrl) {
@@ -92,7 +94,7 @@ async function deployApp() {
   } catch (error) {
     console.error('❌ Failed to deploy app:', error.message);
     console.error('   Make sure you have Shopify CLI installed and authenticated');
-    console.error('   You can deploy manually later with: shopify app deploy');
+    console.error('   You can deploy manually later with: shopify app deploy --reset');
   }
 }
 

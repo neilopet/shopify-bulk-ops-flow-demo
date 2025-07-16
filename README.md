@@ -128,7 +128,7 @@ http://localhost:3000/auth/install?shop=your-shop.myshopify.com
 **Features:**
 - ✅ Automatically reads app configuration from `shopify.app.toml`
 - ✅ Auto-updates app URLs and callback URLs for localhost
-- ✅ Automatically deploys app with correct configuration
+- ✅ Automatically deploys app with `--reset` flag to update Partner Dashboard
 - ✅ Captures OAuth token and saves to `captured_token.json`
 - ✅ Automatically tests Flow trigger with handle `reroute-fulfillment-order`
 - ✅ Shows immediate feedback on token capture and Flow trigger test
