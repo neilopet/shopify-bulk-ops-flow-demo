@@ -1,0 +1,5 @@
+captured_token.json
+*.token
+*.log
+.env
+node_modules/

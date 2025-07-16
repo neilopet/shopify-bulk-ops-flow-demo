@@ -26,3 +26,8 @@ extensions/*/dist
 .shopify.lock
 
 shopify.app.toml
+
+# System and recovery snapshots
+snapshots/
+*.snapshot
+recovery_instructions/

@@ -1,0 +1,140 @@
+# SECURITY WARNING: OAuth Token Protection
+# =========================================
+# This .gitignore file is CRITICAL for preventing accidental exposure of
+# Shopify access tokens and other sensitive credentials.
+# 
+# NEVER remove or modify these patterns without careful security review.
+# Token exposure can lead to:
+# - Unauthorized access to merchant stores
+# - Data breaches and privacy violations
+# - API abuse and rate limiting issues
+# - Compliance violations (GDPR, PCI, etc.)
+#
+# If you accidentally commit any of these files:
+# 1. Immediately rotate/revoke the exposed tokens
+# 2. Remove the files from git history using git filter-branch or BFG
+# 3. Force push to all remotes
+# 4. Notify security team and affected merchants
+
+# OAuth Token Files - NEVER COMMIT
+# ================================
+# These patterns catch common token file naming conventions
+captured_token.json
+*_access_token.json
+*.token
+access_token*
+oauth_token*
+api_secret*
+shopify_token*
+token.json
+tokens.json
+credentials.json
+auth.json
+*.key
+*.pem
+*.cert
+
+# Environment Files - CONTAIN SECRETS
+# ===================================
+# Environment files often contain API keys, secrets, and tokens
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+.env.staging
+env.json
+config.json
+secrets.json
+secrets.yaml
+secrets.yml
+
+# Log Files - MAY CONTAIN TOKENS
+# ===============================
+# Logs can accidentally contain sensitive data from debugging
+*.log
+logs/
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+access.log
+error.log
+debug.log
+
+# Temporary and Cache Files
+# =========================
+# These might contain cached tokens or sensitive data
+.cache/
+.tmp/
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+*~
+
+# IDE and Editor Files
+# ====================
+# May contain sensitive project configuration
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Build and Distribution
+# ======================
+# Compiled code might contain embedded secrets
+dist/
+build/
+out/
+
+# Node.js Dependencies
+# ====================
+# Dependencies are installed locally, not committed
+node_modules/
+
+# Test Coverage and Reports
+# =========================
+# May contain sensitive test data
+coverage/
+.nyc_output/
+test-results/
+junit.xml
+
+# Session and State Files
+# =======================
+# May contain active session tokens
+session.json
+sessions/
+*.session
+state.json
+
+# Database Files
+# ==============
+# Local databases may contain tokens
+*.db
+*.sqlite
+*.sqlite3
+
+# ADDITIONAL SECURITY NOTES
+# ========================
+# 1. Always use environment variables for secrets in production
+# 2. Implement token rotation policies
+# 3. Use secure token storage (e.g., encrypted database, secret management service)
+# 4. Monitor for exposed tokens in git history
+# 5. Enable GitHub secret scanning
+# 6. Regularly audit this .gitignore file
+#
+# For questions about security practices, consult:
+# - Shopify App Security Best Practices
+# - OWASP Security Guidelines
+# - Your organization's security team
