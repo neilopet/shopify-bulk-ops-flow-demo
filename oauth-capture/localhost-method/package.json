@@ -1,0 +1,22 @@
+{
+  "name": "oauth-localhost-capture",
+  "version": "1.0.0",
+  "description": "Localhost OAuth token capture method for Shopify Custom Distribution apps",
+  "main": "minimal-oauth-capture.js",
+  "scripts": {
+    "start": "node minimal-oauth-capture.js",
+    "dev": "PORT=3000 node minimal-oauth-capture.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0"
+  },
+  "keywords": [
+    "shopify",
+    "oauth",
+    "custom-distribution",
+    "token-capture"
+  ],
+  "author": "Allbirds",
+  "license": "MIT"
+}

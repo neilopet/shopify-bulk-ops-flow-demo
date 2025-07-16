@@ -1,0 +1,26 @@
+node_modules
+/.cache
+/build
+/dist
+/public/build
+/.mf
+.env
+.env.local
+.env.production
+.env.development
+.shopify
+.react-router
+h2_deploy_log.json
+
+# Sensitive token files - NEVER commit these!
+captured_token.json
+*_access_token.json
+*.token
+access_token*
+api_secret*
+shopify_token*
+oauth_token*
+
+# Log files that might contain sensitive data
+*.log
+logs/

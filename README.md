@@ -96,3 +96,73 @@ for (const data of fulfillmentOrderData) {
 - [`fragments.js`](./hydrogen-quickstart/app/lib/fragments.js) - GraphQL mutations including `FLOW_TRIGGER_RECEIVE`
 - [`shopify.extension.toml`](./extensions/reroute-fulfillment-order/shopify.extension.toml) - Extension configuration
 - [`reroute_fulfillment_order.flow`](./extensions/reroute-fulfillment-order/reroute_fulfillment_order.flow) - Flow definition
+
+## OAuth Token Capture for Custom Distribution Apps
+
+### The Challenge
+
+Shopify Custom Distribution apps receive their access token **only once** during the OAuth callback when first installed. There's no API to retrieve this token later, making it critical to capture and store it properly.
+
+### Solution: Dual OAuth Capture Methods
+
+This repository includes two proven methods to capture OAuth tokens for Custom Distribution apps:
+
+#### 1. **Localhost Method (Recommended)** - 2-minute setup, no deployment needed
+
+Perfect for development and one-time token capture:
+
+```bash
+# Navigate to localhost method
+cd oauth-capture/localhost-method
+
+# Install dependencies
+npm install
+
+# Start the OAuth capture server
+SHOPIFY_API_SECRET=your_api_secret_here node minimal-oauth-capture.js
+
+# Visit in browser
+http://localhost:3000/auth/install?shop=your-shop.myshopify.com
+```
+
+**Features:**
+- ✅ Captures OAuth token and saves to `captured_token.json`
+- ✅ Automatically tests Flow trigger with handle `reroute-fulfillment-order`
+- ✅ Shows immediate feedback on token capture and Flow trigger test
+- ✅ No deployment required - runs entirely on localhost
+
+#### 2. **Hydrogen Method (Fallback)** - For production environments
+
+For environments where localhost URLs aren't supported:
+
+```bash
+# Navigate to Hydrogen method
+cd oauth-capture/hydrogen-method/oauth-capture-v2
+
+# Deploy to Shopify Oxygen
+shopify app deploy
+```
+
+**Features:**
+- ✅ Production-ready OAuth capture
+- ✅ Deployed to Shopify's infrastructure
+- ✅ Includes Flow trigger testing
+- ✅ Suitable for restricted environments
+
+### Security Best Practices
+
+Both methods include comprehensive `.gitignore` protection to prevent accidental token commits:
+- `captured_token.json` and all token files are excluded
+- Environment variables are protected
+- See [`oauth-capture/.gitignore`](./oauth-capture/.gitignore) for full security patterns
+
+### Quick Start Guide
+
+1. **For quick token capture** → Use the localhost method
+2. **For production deployment** → Use the Hydrogen method
+3. **Store your token securely** → AWS Secrets Manager, environment variables, or encrypted storage
+4. **Never commit tokens** → Our `.gitignore` files protect against this
+
+### Integration with Flow Triggers
+
+Both OAuth capture methods automatically test the `reroute-fulfillment-order` Flow trigger after capturing the token, ensuring your Custom Distribution app can successfully interact with Shopify Flow.
