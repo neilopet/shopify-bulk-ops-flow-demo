@@ -107,7 +107,7 @@ Shopify Custom Distribution apps receive their access token **only once** during
 
 This repository includes two proven methods to capture OAuth tokens for Custom Distribution apps:
 
-#### 1. **Localhost Method (Recommended)** - 2-minute setup, no deployment needed
+#### 1. **Localhost Method (Recommended)** - 2-minute setup with automatic deployment
 
 Perfect for development and one-time token capture:
 
@@ -118,7 +118,7 @@ cd oauth-capture/localhost-method
 # Install dependencies
 npm install
 
-# Start the OAuth capture server
+# Start the OAuth capture server (auto-configures and deploys app)
 SHOPIFY_API_SECRET=your_api_secret_here node minimal-oauth-capture.js
 
 # Visit in browser
@@ -126,10 +126,12 @@ http://localhost:3000/auth/install?shop=your-shop.myshopify.com
 ```
 
 **Features:**
+- ✅ Automatically reads app configuration from `shopify.app.toml`
+- ✅ Auto-updates app URLs and callback URLs for localhost
+- ✅ Automatically deploys app with correct configuration
 - ✅ Captures OAuth token and saves to `captured_token.json`
 - ✅ Automatically tests Flow trigger with handle `reroute-fulfillment-order`
 - ✅ Shows immediate feedback on token capture and Flow trigger test
-- ✅ No deployment required - runs entirely on localhost
 
 #### 2. **Hydrogen Method (Fallback)** - For production environments
 

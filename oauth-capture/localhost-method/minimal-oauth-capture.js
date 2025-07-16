@@ -1,14 +1,100 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const fs = require('fs').promises;
+const toml = require('toml');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 
+const execAsync = promisify(exec);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Your app credentials
-const CLIENT_ID = '0efb20abc830bbddd68ea1e86003306b';
-const CLIENT_SECRET = process.env.SHOPIFY_API_SECRET || 'YOUR_API_SECRET_HERE';
-const SCOPES = 'read_orders,write_orders,read_fulfillments,write_fulfillments';
+// App configuration will be loaded from shopify.app.toml
+let CLIENT_ID;
+let CLIENT_SECRET = process.env.SHOPIFY_API_SECRET || 'YOUR_API_SECRET_HERE';
+let SCOPES;
+
+// Configuration management functions
+async function loadAppConfig() {
+  try {
+    const tomlContent = await fs.readFile('shopify.app.toml', 'utf8');
+    const config = toml.parse(tomlContent);
+    
+    CLIENT_ID = config.client_id;
+    SCOPES = config.access_scopes.scopes;
+    
+    console.log('✅ App configuration loaded successfully');
+    console.log(`   Client ID: ${CLIENT_ID}`);
+    console.log(`   Scopes: ${SCOPES}`);
+    
+    return config;
+  } catch (error) {
+    console.error('❌ Failed to load shopify.app.toml:', error.message);
+    console.error('   Make sure shopify.app.toml exists in the current directory');
+    process.exit(1);
+  }
+}
+
+async function updateAppConfig(config) {
+  const serverUrl = `http://localhost:${PORT}`;
+  const callbackUrl = `${serverUrl}/auth/callback`;
+  
+  // Update URLs
+  config.application_url = serverUrl;
+  
+  // Add localhost callback URL if not already present
+  if (!config.auth.redirect_urls.includes(callbackUrl)) {
+    config.auth.redirect_urls.push(callbackUrl);
+  }
+  
+  // Convert config back to TOML format
+  const tomlContent = `name = "${config.name}"
+client_id = "${config.client_id}"
+application_url = "${config.application_url}"
+embedded = ${config.embedded}
+
+[auth]
+redirect_urls = [
+${config.auth.redirect_urls.map(url => `  "${url}"`).join(',\n')}
+]
+
+[access_scopes]
+scopes = "${config.access_scopes.scopes}"
+
+[webhooks]
+api_version = "${config.webhooks.api_version}"
+
+[build]
+include_config_on_deploy = ${config.build.include_config_on_deploy}`;
+
+  await fs.writeFile('shopify.app.toml', tomlContent);
+  console.log('✅ Updated shopify.app.toml with localhost URLs');
+  console.log(`   App URL: ${config.application_url}`);
+  console.log(`   Callback URL: ${callbackUrl}`);
+}
+
+async function deployApp() {
+  try {
+    console.log('🚀 Deploying app with updated configuration...');
+    const { stdout, stderr } = await execAsync('shopify app deploy');
+    
+    if (stderr && !stderr.includes('successfully')) {
+      console.warn('⚠️  Deploy warnings:', stderr);
+    }
+    
+    console.log('✅ App deployed successfully!');
+    if (stdout.includes('https://')) {
+      const deployedUrl = stdout.match(/https:\/\/[^\s]+/)?.[0];
+      if (deployedUrl) {
+        console.log(`   Deployed URL: ${deployedUrl}`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Failed to deploy app:', error.message);
+    console.error('   Make sure you have Shopify CLI installed and authenticated');
+    console.error('   You can deploy manually later with: shopify app deploy');
+  }
+}
 
 // OAuth endpoints
 app.get('/auth/install', (req, res) => {
@@ -232,10 +318,35 @@ app.get('/', (req, res) => {
   `);
 });
 
+// Initialize server with automatic configuration
+async function initializeServer() {
+  try {
+    console.log('🔧 Initializing OAuth capture server...\n');
+    
+    // Load app configuration
+    const config = await loadAppConfig();
+    
+    // Update URLs for localhost
+    await updateAppConfig(config);
+    
+    // Deploy the app
+    await deployApp();
+    
+    console.log('\n🎉 Server initialization complete!');
+    console.log(`\nNext steps:`);
+    console.log(`1. Visit: http://localhost:${PORT}/auth/install?shop=YOUR-SHOP.myshopify.com`);
+    console.log(`2. The token will be saved to captured_token.json`);
+    console.log(`3. The app has been automatically deployed with the correct URLs`);
+    
+  } catch (error) {
+    console.error('❌ Server initialization failed:', error.message);
+    process.exit(1);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`OAuth capture server running on http://localhost:${PORT}`);
-  console.log(`\nNext steps:`);
-  console.log(`1. Make sure your Partner Dashboard has http://localhost:${PORT}/auth/callback as a redirect URL`);
-  console.log(`2. Visit: http://localhost:${PORT}/auth/install?shop=YOUR-SHOP.myshopify.com`);
-  console.log(`3. The token will be saved to captured_token.json`);
+  
+  // Initialize server with automatic configuration
+  initializeServer();
 });
